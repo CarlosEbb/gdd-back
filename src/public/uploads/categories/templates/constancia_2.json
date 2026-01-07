@@ -1,0 +1,182 @@
+{
+  "schemas": [
+    [
+      {
+        "name": "campo1",
+        "type": "multiVariableText",
+        "content": "{}",
+        "position": {
+          "x": 0.01,
+          "y": 55.69
+        },
+        "width": 215.89,
+        "height": 15,
+        "rotate": 0,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "fontSize": 18,
+        "lineHeight": 1,
+        "characterSpacing": 0,
+        "fontColor": "#000000",
+        "backgroundColor": "",
+        "opacity": 1,
+        "strikethrough": false,
+        "underline": true,
+        "readOnly": true,
+        "text": "CONSTANCIA DE ESTUDIO",
+        "variables": [],
+        "required": false
+      },
+      {
+        "name": "campo1 copy",
+        "type": "multiVariableText",
+        "content": "{\"profesor\":\"Prof. Mary Mendoza\",\"cedula\":\"V-7.197.766\",\"alumno\":\"_______________________________________\"}",
+        "position": {
+          "x": 33.35,
+          "y": 82.64
+        },
+        "width": 149.21,
+        "height": 98.34,
+        "rotate": 0,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontSize": 12,
+        "lineHeight": 1.5,
+        "characterSpacing": 0,
+        "fontColor": "#000000",
+        "backgroundColor": "",
+        "opacity": 1,
+        "strikethrough": false,
+        "underline": false,
+        "readOnly": false,
+        "text": "Quien suscribe, {profesor}, Titular de la Cedula de Identidad Nº {cedula} Directora  de la  Unidad  Educativa Nacional “VÍCTOR ÁNGEL HERNÁNDEZ”, por medio de la presente se hace constar que el (la) alumno (a): {alumno}  Portador (a)    de     la    Cedula     de      Identidad Nº:____________  ; cursa estudios en el nivel de Educación Primaria en el grado _______ , sección ________del año escolar _____/_____\n\n           Constancia que se expide a petición de la parte interesada, en Turmero Municipio Santiago Mariño del Estado Aragua, a los ___ días del mes  de ______________  del    _______",
+        "variables": [
+          "profesor",
+          "cedula",
+          "alumno"
+        ],
+        "required": false
+      },
+      {
+        "name": "campo4",
+        "type": "multiVariableText",
+        "content": "{}",
+        "position": {
+          "x": 0,
+          "y": 257.69
+        },
+        "width": 215.89,
+        "height": 15,
+        "rotate": 0,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "fontSize": 13,
+        "lineHeight": 1,
+        "characterSpacing": 0,
+        "fontColor": "#000000",
+        "backgroundColor": "",
+        "opacity": 1,
+        "strikethrough": false,
+        "underline": false,
+        "readOnly": true,
+        "text": "Dirección: AVENIDA PRINCIPAL CON CALLE SUR EDIF. TORRE ALBA PISO 3 OFICINA \n301 URB. LAS ACACIAS , Caracas – Venezuela. Teléfonos: 0412-1234567 / 0212-1234567\nRIF: J-00000000-0",
+        "variables": [],
+        "required": false
+      },
+      {
+        "name": "campo5",
+        "type": "line",
+        "position": {
+          "x": 62.45,
+          "y": 218.69
+        },
+        "width": 91,
+        "height": 0.5,
+        "rotate": 0,
+        "opacity": 1,
+        "readOnly": true,
+        "color": "#000000",
+        "required": false,
+        "content": ""
+      },
+      {
+        "name": "campo6",
+        "type": "signature",
+        "content": "data:image/png;base64,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",
+        "position": {
+          "x": 78.85,
+          "y": 183.67
+        },
+        "width": 62.5,
+        "height": 37.5,
+        "required": false
+      },
+      {
+        "name": "campo7",
+        "type": "multiVariableText",
+        "content": "{\"empledo_rrh\":\"Camilo Rodríguez\",\"cargo_rrh\":\"Director de Recursos Humanos\"}",
+        "position": {
+          "x": 0,
+          "y": 222.18
+        },
+        "width": 215.89,
+        "height": 15,
+        "rotate": 0,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "fontSize": 13,
+        "lineHeight": 1,
+        "characterSpacing": 0,
+        "fontColor": "#000000",
+        "backgroundColor": "",
+        "opacity": 1,
+        "strikethrough": false,
+        "underline": false,
+        "readOnly": false,
+        "text": "{empledo_rrh}\n{{cargo_rrh}}",
+        "variables": [
+          "empledo_rrh",
+          "cargo_rrh"
+        ],
+        "required": false
+      },
+      {
+        "name": "campo1 copy 2",
+        "type": "multiVariableText",
+        "content": "{}",
+        "position": {
+          "x": 32.56,
+          "y": 18.62
+        },
+        "width": 146.03,
+        "height": 15,
+        "rotate": 0,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "fontSize": 12,
+        "lineHeight": 1,
+        "characterSpacing": 0,
+        "fontColor": "#000000",
+        "backgroundColor": "",
+        "opacity": 1,
+        "strikethrough": false,
+        "underline": false,
+        "readOnly": true,
+        "text": "REPÚBLICA BOLIVARIANA DE VENEZUELA\nMINISTERIO DEL PODER POPULAR PARA LA  EDUCACIÓN\nU.E.N “VICTOR ÁNGEL HERNÁNDEZ” \nTURMERO – ARAGUA",
+        "variables": [],
+        "required": false
+      }
+    ]
+  ],
+  "basePdf": {
+    "width": 215.9,
+    "height": 279.4,
+    "padding": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "pdfmeVersion": "5.3.1"
+}

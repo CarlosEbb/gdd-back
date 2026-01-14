@@ -1,8 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import pdf from "pdf-poppler";
-import os from "os";
 
 
 // -------------------------------

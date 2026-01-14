@@ -14,11 +14,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@pdfme/common": "^5.3.13",
-    "@pdfme/converter": "^5.5.8",
     "@pdfme/generator": "^5.3.13",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
-    "canvas": "^2.11.2",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

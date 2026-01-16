@@ -1,3 +1,27 @@
+coloca todos estos comandos en un makdown
+
+ Instalar PostgreSQL
+PHP
+apt install postgresql
+sudo -u postgres psql
+ALTER USER postgres PASSWORD 'elite';
+ 
+ 
+Instalar GIT y luego subir servicios al PM2
+ 
+PHP
+sudo apt install git
+pm2 start src/index.js --name "gdd-back" --log-date-format "YYYY-MM-DD HH:mm:ss"
+pm2 start ./dist/server/entry.mjs --name gdd-front --log-date-format "YYYY-MM-DD HH:mm:ss"
+ 
+Instalar BD inicial
+ 
+PHP
+sudo -u postgres psql
+\i /mnt/proyect/gdd-back/BD_init.sql
+ 
+Instalar librerias para la miniatura de los PDF
+PHP
 sudo apt-get install -y \
   libatk1.0-0 \
   libatk-bridge2.0-0 \

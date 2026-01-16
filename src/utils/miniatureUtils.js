@@ -69,9 +69,9 @@ export const generateThumbnailFromBuffer = async (pdfBuffer, outputPath) => {
                 const page = await pdf.getPage(1);
                 
                 // Calcular escala para miniatura (ajustar según necesidad)
-                // Objetivo: aproximadamente 800px de ancho máximo
+                // Objetivo: aproximadamente 115px de ancho máximo
                 const viewport = page.getViewport({ scale: 1 });
-                const targetWidth = 800;
+                const targetWidth = 115;
                 const scale = targetWidth / viewport.width;
                 
                 const scaledViewport = page.getViewport({ scale });

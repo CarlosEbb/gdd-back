@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { createJSONResponse } from '../utils/responseUtils.js';
-import { handleGeneratePdf, extraerVariablesDesdeTemplate } from '../utils/pdfUtils.js';
+import { handleGeneratePdf, extraerVariablesDesdeTemplate, extraerNombresDesdeTemplate } from '../utils/pdfUtils.js';
 import { sendEmail } from "../utils/emailController.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -191,7 +191,11 @@ export const getVariablesFromTemplate = async (req, res) => {
       "soporte@miempresa.com",
       "ventas@miempresa.com"
     ];
-    return res.status(200).json(createJSONResponse(200, 'Variables extraídas correctamente', variables));
+
+    const elementos = await extraerNombresDesdeTemplate(templateJson);
+
+
+    return res.status(200).json(createJSONResponse(200, 'Variables extraídas correctamente', {variables, elementos}));
 
   } catch (error) {
     console.error("❌ Error al obtener variables del template:", error);

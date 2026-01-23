@@ -83,9 +83,7 @@ router.post(
 );
 router.delete('/:uuid_template', authMiddleware, deleteTemplate);
 router.get('/file/:uuid_template/:build_number', authMiddleware, getTemplateFile);
-router.get('/generatePDF/:uuid_template/:build_number', (req, res, next) => {
-  generatePDF(req, res, next);
-});
+router.get('/generatePDF/:uuid_template/:build_number', (req, res, next) => {generatePDF(req, res, next);});
 
 router.put('/:uuid_template/move', authMiddleware, moveTemplateToWorkspace);
 

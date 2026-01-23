@@ -172,6 +172,10 @@ export async function extraerVariablesDesdeTemplate(templateJson) {
   return resultado;
 }
 
+export function extraerNombresDesdeTemplate(templateJson) {
+  return templateJson.schemas?.flat().map(item => item?.name).filter(Boolean) || [];
+}
+
 const loadFont = async (filePath) => {
   return await fs.readFile(filePath)
 }

@@ -10,7 +10,7 @@ import Template from '../models/templateModel.js';
 import Version from '../models/versionModel.js';
 import Category from '../models/categoryModel.js';
 import Workspace from '../models/workspaceModel.js';
-import { handleGeneratePdf, extraerVariablesDesdeTemplate} from '../utils/pdfUtils.js';
+import { handleGeneratePdf, extraerVariablesDesdeTemplate, compressJson, decompressJson} from '../utils/pdfUtils.js';
 import geminiService from '../services/geminiService.js';
 
 import { createJSONResponse } from '../utils/responseUtils.js';
@@ -303,14 +303,56 @@ export const createTemplate = async (req, res) => {
 // -------------------------------
 export const updateTemplateVersion = async (req, res) => {
   try {
+    console.log('🎯 Controlador updateTemplateVersion ejecutándose');
+    console.log('📋 Parámetros:', req.params);
+    console.log('📦 Body (otros campos):', req.body);
+    console.log('📁 Archivo procesado:', req.file ? {
+      nombre: req.file.originalname,
+      tamaño: req.file.size,
+      tipo: req.file.mimetype
+    } : 'No hay archivo');
+
     const userId = req.user.id;
-    const { uuid_template } = req.params; // UUID del template
+    const { uuid_template } = req.params;
+    
+    // Los otros campos del FormData vienen en req.body
     const { 
-      template_data,
       pageSize,
       orientation,
       marginType
     } = req.body;
+    
+    // El archivo viene en req.file
+    const templateFile = req.file;
+    
+    // Verificar que tenemos el archivo
+    if (!templateFile || !templateFile.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'El archivo template_data es requerido y debe contener datos'
+      });
+    }
+    
+    // Procesar el archivo según su tipo
+    let decompressedData;
+    const buffer = templateFile.buffer;
+    
+    // Detectar si es gzip por extensión o contenido
+    const isGzipFile = templateFile.originalname.endsWith('.gz') || 
+                       templateFile.originalname.endsWith('.gzip') ||
+                       templateFile.mimetype.includes('gzip');
+    
+    if (isGzipFile) {
+      console.log('🧠 Descomprimiendo archivo gzip...');
+      // Descomprimir gzip
+      decompressedData = await decompressJson(buffer);
+      console.log('✅ Archivo descomprimido, tipo:', typeof decompressedData);
+    } else {
+      console.log('📄 Parseando JSON directamente...');
+      // Asumir que es JSON
+      const jsonString = buffer.toString('utf8');
+      decompressedData = JSON.parse(jsonString);
+    }
 
     // 1️⃣ Buscar template por UUID
     const template = await Template.getByUUID(uuid_template);
@@ -331,7 +373,7 @@ export const updateTemplateVersion = async (req, res) => {
     
     // Variables para almacenar la configuración
     let newPageConfig = null;
-    let updatedTemplateData = { ...template_data };
+    let updatedTemplateData = { ...decompressedData };
     
     // Verificar si se proporcionaron parámetros de configuración de página
     const hasPageConfig = pageSize !== undefined || orientation !== undefined || marginType !== undefined;
@@ -339,13 +381,13 @@ export const updateTemplateVersion = async (req, res) => {
     if (hasPageConfig) {
       // Determinar los valores a usar (nuevos o existentes)
       const pageSizeToUse = pageSize !== undefined ? pageSize.toUpperCase() : 
-                           (template_data?.basePdf?.pageSize || template.page_size || 'CARTA');
+                           (decompressedData?.basePdf?.pageSize || template.page_size || 'CARTA');
       
       const orientationToUse = orientation !== undefined ? orientation.toUpperCase() : 
-                              (template_data?.basePdf?.orientation || template.orientation || 'PORTRAIT');
+                              (decompressedData?.basePdf?.orientation || template.orientation || 'PORTRAIT');
       
       const marginTypeToUse = marginType !== undefined ? marginType.toUpperCase() : 
-                             (template_data?.basePdf?.marginType || template.margin_type || 'NORMAL');
+                             (decompressedData?.basePdf?.marginType || template.margin_type || 'NORMAL');
       
       // Validar los valores
       if (pageSize !== undefined && !validPageSizes.includes(pageSizeToUse)) {
@@ -363,11 +405,11 @@ export const updateTemplateVersion = async (req, res) => {
       // Obtener configuración completa de la página
       newPageConfig = getPaperConfig(pageSizeToUse, orientationToUse, marginTypeToUse);
       
-      // Actualizar el template_data con la nueva configuración
+      // Actualizar el decompressedData con la nueva configuración
       updatedTemplateData = {
-        ...template_data,
+        ...decompressedData,
         basePdf: {
-          ...(template_data.basePdf || {}),
+          ...(decompressedData.basePdf || {}),
           width: newPageConfig.width,
           height: newPageConfig.height,
           padding: [
@@ -465,7 +507,10 @@ export const updateTemplateVersion = async (req, res) => {
 // -------------------------------
 export const getTemplateFile = async (req, res) => {
   try {
-    const { uuid_template, build_number } = req.params; // UUID del template
+    const { uuid_template, build_number } = req.params;
+    const { compress = 'false' } = req.query; // Opcional: ?compress=true
+    
+    const shouldCompress = compress === 'true';
 
     const template = await Template.getByUUID(uuid_template);
     if (!template) {
@@ -477,13 +522,31 @@ export const getTemplateFile = async (req, res) => {
       return res.status(404).json(createJSONResponse(404, 'Versión no encontrada'));
     }
 
-    const relativePath = version.path_json.replace(/^\/+/, ''); // quitar "/" inicial
+    const relativePath = version.path_json.replace(/^\/+/, '');
     const absolutePath = path.join(__dirname, '../public', relativePath);
 
     const fileData = await fs.readFile(absolutePath, 'utf-8');
     const json = JSON.parse(fileData);
 
+    // Opción 1: Con compresión
+    if (shouldCompress) {
+      const compressedBlob = await compressJson(json);
+      const arrayBuffer = await compressedBlob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // Configurar headers para respuesta comprimida
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Content-Disposition', `attachment; filename="template_${uuid_template}_v${build_number}.json.gz"`);
+      res.setHeader('X-Compression', 'gzip');
+      res.setHeader('X-Original-Size', Buffer.byteLength(fileData, 'utf-8'));
+      res.setHeader('X-Compressed-Size', buffer.length);
+      
+      return res.send(buffer);
+    }
+    
     res.json(createJSONResponse(200, 'Plantilla cargada correctamente', json));
+    
   } catch (error) {
     console.error('❌ Error en getTemplateFile:', error);
     res.status(500).json(createJSONResponse(500, 'Error al leer plantilla'));

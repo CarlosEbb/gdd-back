@@ -530,7 +530,7 @@ export const getTemplateFile = async (req, res) => {
 
     // Opción 1: Con compresión
     if (shouldCompress) {
-      const compressedBlob = await compressJson(json);
+      const compressedBlob = await compressJson(createJSONResponse(200, 'Plantilla cargada correctamente', json));
       const arrayBuffer = await compressedBlob.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       

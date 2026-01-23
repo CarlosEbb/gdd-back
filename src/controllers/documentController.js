@@ -202,3 +202,15 @@ export const getVariablesFromTemplate = async (req, res) => {
     return res.status(500).json(createJSONResponse(500, 'Error interno del servidor'));
   }
 };
+
+export const postValidateVariablesFromTemplate = async (req, res) => {
+  try {
+    console.log('validaciones', req.body);
+
+    return res.status(200).json(createJSONResponse(200, 'Validaciones aplicadas correctamente', {}));
+
+  } catch (error) {
+    console.error("❌ Error al obtener variables del template:", error);
+    return res.status(500).json(createJSONResponse(500, 'Error interno del servidor'));
+  }
+};

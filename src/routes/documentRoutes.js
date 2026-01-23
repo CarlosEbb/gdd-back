@@ -4,20 +4,21 @@ import {
   saveDocument,
   viewPDF,
   listByTemplate,
-  getVariablesFromTemplate
+  getVariablesFromTemplate,
+  postValidateVariablesFromTemplate
 } from "../controllers/documentController.js";
 
 const router = express.Router();
 
-// 1) Guardar documento
+
 router.post("/:uuid_template/:build_number", saveDocument);
 
-// 2) Ver PDF generado desde UUID
 router.get("/viewPDF/:uuid", viewPDF);
 
-// 3) Listado por template
 router.get("/getTemplate/:id_template", listByTemplate);
 
 router.get("/variables/:uuid_template/:build_number", getVariablesFromTemplate);
+router.post("/validate/variables/:uuid_template/:build_number", postValidateVariablesFromTemplate);
 
+postValidateVariablesFromTemplate
 export default router;

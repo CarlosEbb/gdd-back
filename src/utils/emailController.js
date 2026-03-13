@@ -38,3 +38,52 @@ export async function sendEmail(to, subject, text, attachments = []) {
         throw error;
     }
 }
+
+//función para enviar correo a través de la API de DanaConnect
+export async function sendEmailViaAPI(correo, url) {
+    try {
+        // Validar que los parámetros requeridos estén presentes
+        if (!correo || !url) {
+            throw new Error('El correo y la URL son obligatorios');
+        }
+
+        // Preparar el cuerpo de la solicitud
+        const requestBody = {
+            CORREO: correo,
+            URL: url
+        };
+
+        // Configurar la autenticación básica
+        const auth = Buffer.from(`${process.env.DANACONNECT_USER}:${process.env.DANACONNECT_PASS}`).toString('base64');
+
+        // Realizar la petición a la API
+        const response = await fetch('https://appserv.danaconnect.com/api/1.0/rest/conversation/570645/start/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${auth}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        // Verificar si la respuesta fue exitosa
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error en la API: ${response.status} - ${errorText}`);
+        }
+
+        // Obtener la respuesta
+        const responseData = await response.json();
+        console.log('Correo enviado correctamente a través de la API:', responseData);
+        
+        // return {
+        //     success: true,
+        //     data: responseData,
+        //     message: 'Correo enviado correctamente a través de la API'
+        // };
+
+    } catch (error) {
+        console.error('Error al enviar el correo a través de la API:', error);
+        throw error;
+    }
+}

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 
 import { createJSONResponse } from '../utils/responseUtils.js';
 import { handleGeneratePdf, extraerVariablesDesdeTemplate, extraerNombresDesdeTemplate } from '../utils/pdfUtils.js';
-import { sendEmail } from "../utils/emailController.js";
+import { sendEmail, sendEmailViaAPI } from "../utils/emailController.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,7 +39,6 @@ export const saveDocument = async (req, res) => {
       id_template: template.id
     });
 
-    //const viewUrl = `${req.protocol}://${req.get("host")}/documents/viewPDF/${newDoc.uuid}`;
     const urlTemp = process.env.APP_URL_BACK;
     const viewUrl = `${urlTemp}/documents/viewPDF/${newDoc.uuid}`;
 
@@ -58,23 +57,31 @@ export const saveDocument = async (req, res) => {
       // Ejecutamos en background sin esperar
       (async () => {
         try {
+          // Determinar qué método de envío usar según variable de entorno
+          const emailMethod = process.env.EMAIL_METHOD || 'smtp'; // Por defecto usa smtp
+          
           for (const email of correos) {
-            // Ya no necesitamos leer el archivo en cada iteración
-            await sendEmail(
-              email,
-              "Documento generado",
-              htmlTemplate // Usamos el mismo template ya procesado
-            );
+            if (emailMethod === 'api') {
+              // Usar la API de DanaConnect
+              await sendEmailViaAPI(email, viewUrl);
+              console.log(`📧 Correo enviado por API a: ${email}`);
+            } else {
+              // Usar SMTP (método por defecto)
+              await sendEmail(
+                email,
+                "Documento generado",
+                htmlTemplate
+              );
+              console.log(`📧 Correo enviado por SMTP a: ${email}`);
+            }
           }
 
-          console.log("📬 Correos enviados correctamente en segundo plano");
+          console.log(`📬 Correos enviados correctamente en segundo plano (método: ${emailMethod})`);
         } catch (err) {
           console.error("❌ Error enviando correos en background:", err);
         }
       })();
     }
-
-    // ----------------------------------------------------------------------
 
     return res.status(201).json({
       status: 201,

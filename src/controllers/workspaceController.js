@@ -35,15 +35,36 @@ export const getWorkspaceById = async (req, res) => {
 };
 
 // 📙 Crear un nuevo workspace y asignarlo al usuario autenticado
+// 📙 Crear un nuevo workspace y asignarlo al usuario autenticado
 export const createWorkspace = async (req, res) => {
   try {
     const { name, icon } = req.body;
     const user_id = req.user.id;
 
+    // Validar que no exceda el límite
+    const canCreate = await Workspace.canCreateWorkspace(user_id);
+    if (!canCreate) {
+      const maxWorkspaces = parseInt(process.env.MAX_WORKSPACES_PER_USER || '1', 10);
+      return res.status(403).json(createJSONResponse(
+        403, 
+        `Límite de workspaces alcanzado. Máximo permitido: ${maxWorkspaces}`, 
+        { 
+          currentWorkspaces: await Workspace.getUserWorkspaceCount(user_id),
+          maxAllowed: maxWorkspaces 
+        }
+      ));
+    }
+
     const workspace = await Workspace.create({ name, icon, user_id });
     res.status(201).json(createJSONResponse(201, 'Workspace creado con éxito', workspace));
   } catch (error) {
     console.error('❌ Error en createWorkspace:', error);
+    
+    // Manejar error específico de límite
+    if (error.message.includes('ya tiene')) {
+      return res.status(403).json(createJSONResponse(403, error.message, null));
+    }
+    
     res.status(500).json(createJSONResponse(500, 'Error interno del servidor', { error: error.message }));
   }
 };

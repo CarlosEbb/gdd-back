@@ -2,10 +2,44 @@
 import { pool } from '../utils/dbUtils.js';
 
 export default class Workspace {
+
+    // Verificar si el usuario puede crear más workspaces
+  static async canCreateWorkspace(userId) {
+    const maxWorkspaces = parseInt(process.env.MAX_WORKSPACES_PER_USER || '1', 10);
+    
+    const query = `
+      SELECT COUNT(*) as workspace_count
+      FROM user_workspaces
+      WHERE user_id = $1 AND is_owner = true
+    `;
+    const result = await pool.query(query, [userId]);
+    const currentCount = parseInt(result.rows[0].workspace_count, 10);
+    
+    return currentCount < maxWorkspaces;
+  }
+
+  // Obtener la cantidad actual de workspaces del usuario
+  static async getUserWorkspaceCount(userId) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM user_workspaces
+      WHERE user_id = $1 AND is_owner = true
+    `;
+    const result = await pool.query(query, [userId]);
+    return parseInt(result.rows[0].count, 10);
+  }
+
   // Crear workspace y asignarlo al usuario creador (propietario)
   static async create({ name, icon, user_id }) {
     const client = await pool.connect();
     try {
+      // Verificar límite antes de crear
+      const canCreate = await this.canCreateWorkspace(user_id);
+      if (!canCreate) {
+        const maxWorkspaces = parseInt(process.env.MAX_WORKSPACES_PER_USER || '1', 10);
+        throw new Error(`El usuario ya tiene ${maxWorkspaces} workspace(s). No puede crear más.`);
+      }
+
       await client.query('BEGIN');
 
       const workspaceResult = await client.query(

@@ -2,7 +2,41 @@
 import { pool } from '../utils/dbUtils.js';
 
 export default class Template {
+  // Verificar si se pueden crear más templates en un workspace
+  static async canCreateTemplate(workspaceId) {
+    const maxTemplates = parseInt(process.env.MAX_TEMPLATES_PER_WORKSPACE || '3', 10);
+    
+    const query = `
+      SELECT COUNT(*) as template_count
+      FROM templates
+      WHERE id_workspace = $1 AND status = 'active'
+    `;
+    const result = await pool.query(query, [workspaceId]);
+    const currentCount = parseInt(result.rows[0].template_count, 10);
+    
+    return currentCount < maxTemplates;
+  }
+
+  // Obtener la cantidad actual de templates en un workspace
+  static async getWorkspaceTemplateCount(workspaceId) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM templates
+      WHERE id_workspace = $1 AND status = 'active'
+    `;
+    const result = await pool.query(query, [workspaceId]);
+    return parseInt(result.rows[0].count, 10);
+  }
+
+  // Modificar el método create existente para incluir la validación
   static async create({ title, name, description, id_workspace }) {
+    // Verificar límite antes de crear
+    const canCreate = await this.canCreateTemplate(id_workspace);
+    if (!canCreate) {
+      const maxTemplates = parseInt(process.env.MAX_TEMPLATES_PER_WORKSPACE || '3', 10);
+      throw new Error(`El workspace ya tiene ${maxTemplates} template(s). No puede crear más.`);
+    }
+
     const query = `
       INSERT INTO templates (title, name, description, id_workspace)
       VALUES ($1, $2, $3, $4)
@@ -88,8 +122,8 @@ export default class Template {
   static async getActiveWithLastVersionByWorkspace(id_workspace) {
     const query = `
       SELECT 
-        t.*,  -- Todos los campos del template
-        jsonb_build_object(  -- Construye un objeto JSON con la última versión
+        t.*,
+        jsonb_build_object(
           'id', v.id,
           'name_version', v.name_version,
           'build_number', v.build_number,
@@ -99,8 +133,8 @@ export default class Template {
       LEFT JOIN LATERAL (
         SELECT vv.*
         FROM template_versions vv
-        WHERE vv.id_template = t.id  -- Para CADA template...
-        ORDER BY vv.build_number DESC  -- ...toma la última versión
+        WHERE vv.id_template = t.id
+        ORDER BY vv.build_number DESC
         LIMIT 1
       ) v ON TRUE
       WHERE t.id_workspace = $1
@@ -123,7 +157,6 @@ export default class Template {
     return result.rows[0];
   }
 
-  // Actualizar workspace asociado al template
   static async updateWorkspace(id_template, new_workspace_id) {
     const query = `
       UPDATE templates

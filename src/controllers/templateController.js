@@ -126,7 +126,7 @@ export const createTemplate = async (req, res) => {
       name, 
       description, 
       uuid_workspace,
-      uuid_category, // Nuevo campo opcional
+      uuid_category,
       pageSize = 'CARTA', 
       orientation = 'PORTRAIT', 
       marginType = 'NONE',
@@ -157,6 +157,23 @@ export const createTemplate = async (req, res) => {
     const hasAccess = await Workspace.userHasAccess(userId, workspace.id);
     if (!hasAccess) {
       return res.status(403).json(createJSONResponse(403, 'No tienes acceso al workspace'));
+    }
+
+    // 🔹 NUEVA VALIDACIÓN: Verificar límite de templates por workspace
+    const canCreateTemplate = await Template.canCreateTemplate(workspace.id);
+    if (!canCreateTemplate) {
+      const maxTemplates = parseInt(process.env.MAX_TEMPLATES_PER_WORKSPACE || '3', 10);
+      const currentCount = await Template.getWorkspaceTemplateCount(workspace.id);
+      
+      return res.status(403).json(createJSONResponse(
+        403, 
+        `Límite de templates alcanzado en este workspace. Máximo permitido: ${maxTemplates}`, 
+        { 
+          currentTemplates: currentCount,
+          maxAllowed: maxTemplates,
+          workspaceId: workspace.uuid
+        }
+      ));
     }
 
     // Variable para almacenar la plantilla base
@@ -208,6 +225,7 @@ export const createTemplate = async (req, res) => {
       }
     }
 
+    // El método create ahora incluye la validación de límite internamente
     const template = await Template.create({
       title,
       name,
@@ -216,7 +234,7 @@ export const createTemplate = async (req, res) => {
       page_size: pageSize, 
       orientation: orientation,
       margin_type: marginType,
-      id_category: categoryInfo ? categoryInfo.id : null // Opcional: almacenar referencia a categoría
+      id_category: categoryInfo ? categoryInfo.id : null
     });
 
     const buildNumber = 1.00;
@@ -285,7 +303,11 @@ export const createTemplate = async (req, res) => {
     // Preparar respuesta
     const responseData = {
       template, 
-      version
+      version,
+      limits: {
+        currentTemplates: await Template.getWorkspaceTemplateCount(workspace.id),
+        maxAllowed: parseInt(process.env.MAX_TEMPLATES_PER_WORKSPACE || '3', 10)
+      }
     };
 
     res.status(201).json(
@@ -293,10 +315,15 @@ export const createTemplate = async (req, res) => {
     );
   } catch (error) {
     console.error('❌ Error en createTemplate:', error);
+    
+    // Manejar error específico de límite de templates
+    if (error.message && error.message.includes('ya tiene')) {
+      return res.status(403).json(createJSONResponse(403, error.message, null));
+    }
+    
     res.status(500).json(createJSONResponse(500, 'Error al crear template'));
   }
 };
-
 
 // -------------------------------
 // ✅ 3. GUARDAR NUEVA VERSIÓN (NUEVO JSON) CON CONFIGURACIÓN DE PÁGINA

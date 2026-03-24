@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generate } from '@pdfme/generator';
 import { text, multiVariableText, table, line, rectangle, ellipse, image, svg } from "@pdfme/schemas";
+import { agregarImageSandbox } from '../pdfme/utils.js';
 import { signature } from '../pdfme/plugins/signature/index.js';
 import { PDFDocument } from 'pdf-lib'
 
@@ -16,12 +17,27 @@ const tempDir = path.resolve(__dirname, '../../temp');
 export async function handleGeneratePdf(res = null, template, jsonContent, returnBuffer = false) {
   const plugins = { text, multiVariableText, table, line, rectangle, ellipse, image, svg, signature };
 
+  
   // Copia profunda del template
   let updatedTemplate = JSON.parse(JSON.stringify(template));
 
   // Configurar basePdf si es BLANK_PDF
   if (updatedTemplate.basePdf === 'BLANK_PDF') {
     updatedTemplate.basePdf = { width: 210, height: 297, padding: [0, 0, 0, 0] };
+  }
+
+   // Extraer width y height de basePdf si existen
+  let width, height;
+  if (updatedTemplate.basePdf && typeof updatedTemplate.basePdf === 'object') {
+    width = updatedTemplate.basePdf.width;
+    height = updatedTemplate.basePdf.height;
+  }
+
+  // Llamar a la función solo si existen width y height, de lo contrario usar valores por defecto
+  if (width !== undefined && height !== undefined) {
+    updatedTemplate = agregarImageSandbox(updatedTemplate, width - 10, height - 10);
+  } else {
+    updatedTemplate = agregarImageSandbox(updatedTemplate);
   }
 
   // === PROCESAR JSON CONTENT ===

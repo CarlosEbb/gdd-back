@@ -5,15 +5,19 @@ import {
   viewPDF,
   listByTemplate,
   getVariablesFromTemplate,
-  postValidateVariablesFromTemplate
+  postValidateVariablesFromTemplate,
+  saveDocumentLastVersion
 } from "../controllers/documentController.js";
+
+import { verifyJWT } from "../middlewares/documentAuthMiddleware.js";
 
 const router = express.Router();
 
 
-router.post("/:uuid_template/:build_number", saveDocument);
+router.post("/:uuid_template/:build_number", verifyJWT, saveDocument);
+router.post("/:uuid_template", verifyJWT, saveDocumentLastVersion);
 
-router.get("/viewPDF/:uuid", viewPDF);
+router.get("/viewPDF/:encrypt", viewPDF);
 
 router.get("/getTemplate/:id_template", listByTemplate);
 

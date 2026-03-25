@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit'; // Importa rate-limit
 
 import authRoutes from './routes/authRoutes.js';
 import workspaces from './routes/workspaceRoutes.js';
@@ -24,6 +25,20 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Configurar rate limiter - 50 peticiones por minuto
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    limit: 50, // 50 peticiones por ventana de tiempo
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    handler: (req, res) => {
+        const jsonResponse = createJSONResponse(429, 'Too many requests', {
+            errors: ['Has alcanzado el límite de solicitudes. Por favor, espera unos minutos antes de intentarlo de nuevo.']
+        });
+        res.status(429).json(jsonResponse);
+    }
+});
 
 // Middlewares base
 app.use(cookieParser());
@@ -48,13 +63,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rutas
-app.use('/auth', authRoutes);
-app.use('/workspace', workspaces);
-app.use('/template', template);
-app.use('/category', category);
-app.use("/documents", documentRoutes);
-// Prueba
+// APLICAR RATE LIMITER A TODAS LAS RUTAS (opción 1)
+// app.use(limiter); // Esto aplica el rate limit a todas las rutas
+
+// APLICAR RATE LIMITER A RUTAS ESPECÍFICAS (opción 2 - recomendada)
+app.use('/auth', limiter, authRoutes);
+app.use('/workspace', limiter, workspaces);
+app.use('/template', limiter, template);
+app.use('/category', limiter, category);
+app.use("/documents", limiter, documentRoutes);
+
+// También puedes aplicar rate limit a rutas específicas dentro de cada archivo de rutas
+
+// Prueba - esta ruta no tiene rate limit
 app.get('/', (req, res) => {
   const response = createJSONResponse(200, 'Servidor activo', { project: 'GDD' });
   res.status(200).json(response);

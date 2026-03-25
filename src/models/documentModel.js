@@ -28,7 +28,7 @@ export default class Document {
 
   static async listByTemplateUUID(uuid_template) {
     const query = `
-        SELECT d.id, d.uuid, d.id_template, d.created_at, d.status, d.build_number
+        SELECT d.id, d.uuid, d.id_template, d.created_at, d.status, d.build_number, d.encrypt
         FROM documents d
         INNER JOIN templates t ON t.id = d.id_template
         WHERE t.uuid = $1

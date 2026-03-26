@@ -9,13 +9,13 @@ import {
   saveDocumentLastVersion
 } from "../controllers/documentController.js";
 
-import { verifyJWT } from "../middlewares/documentAuthMiddleware.js";
+import { validateTemplateToken } from "../middlewares/validateTemplateToken.js";
 
 const router = express.Router();
 
 
-router.post("/:uuid_template/:build_number", verifyJWT, saveDocument);
-router.post("/:uuid_template", verifyJWT, saveDocumentLastVersion);
+router.post("/:uuid_template/:build_number", validateTemplateToken, saveDocument);
+router.post("/:uuid_template", validateTemplateToken, saveDocumentLastVersion);
 
 router.get("/viewPDF/:encrypt", viewPDF);
 

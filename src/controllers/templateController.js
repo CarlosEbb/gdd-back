@@ -326,7 +326,7 @@ export const createTemplate = async (req, res) => {
 };
 
 // -------------------------------
-// ✅ 3. GUARDAR NUEVA VERSIÓN (NUEVO JSON) CON CONFIGURACIÓN DE PÁGINA
+// ✅ 3. GUARDAR NUEVA VERSIÓN 
 // -------------------------------
 export const updateTemplateVersion = async (req, res) => {
   try {

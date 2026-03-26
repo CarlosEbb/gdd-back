@@ -1,5 +1,6 @@
 // src/models/templateModel.js
 import { pool } from '../utils/dbUtils.js';
+import { generateTemplateToken, verifyTemplateToken } from '../utils/tokenUtils.js';
 
 export default class Template {
   // Verificar si se pueden crear más templates en un workspace
@@ -28,8 +29,8 @@ export default class Template {
     return parseInt(result.rows[0].count, 10);
   }
 
-  // Modificar el método create existente para incluir la validación
-  static async create({ title, name, description, id_workspace }) {
+
+static async create({ title, name, description, id_workspace }) {
     // Verificar límite antes de crear
     const canCreate = await this.canCreateTemplate(id_workspace);
     if (!canCreate) {
@@ -37,14 +38,43 @@ export default class Template {
       throw new Error(`El workspace ya tiene ${maxTemplates} template(s). No puede crear más.`);
     }
 
-    const query = `
-      INSERT INTO templates (title, name, description, id_workspace)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const values = [title, name, description, id_workspace];
-    const result = await pool.query(query, values);
-    return result.rows[0];
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Insertar el template
+      const insertQuery = `
+        INSERT INTO templates (title, name, description, id_workspace)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;
+      `;
+      const insertValues = [title, name, description, id_workspace];
+      const insertResult = await client.query(insertQuery, insertValues);
+      const template = insertResult.rows[0];
+      
+      // Generar el token usando la función de tokenUtils
+      const token = generateTemplateToken(template);
+      
+      // Actualizar el template con el token
+      const updateQuery = `
+        UPDATE templates 
+        SET jwt_token = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING *;
+      `;
+      const updateResult = await client.query(updateQuery, [token, template.id]);
+      
+      await client.query('COMMIT');
+      
+      return updateResult.rows[0];
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   static async getById(id) {

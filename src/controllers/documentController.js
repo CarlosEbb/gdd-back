@@ -291,7 +291,7 @@ export const getVariablesFromTemplate = async (req, res) => {
     const elementos = await extraerNombresDesdeTemplate(templateJson);
 
 
-    return res.status(200).json(createJSONResponse(200, 'Variables extraídas correctamente', {variables, elementos}));
+    return res.status(200).json(createJSONResponse(200, 'Variables extraídas correctamente', {variables, elementos, template}));
 
   } catch (error) {
     console.error("❌ Error al obtener variables del template:", error);

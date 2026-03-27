@@ -1,5 +1,6 @@
 // src/models/documentModel.js
 import { pool } from '../utils/dbUtils.js';
+import { createDocumentEncrypt } from '../utils/encrypt.js';
 
 export default class Document {
 

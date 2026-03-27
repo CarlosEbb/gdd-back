@@ -3,15 +3,48 @@ import { pool } from '../utils/dbUtils.js';
 
 export default class Document {
 
-  static async create({ jsonData, id_template, encrypt, build_number }) {
-    const query = `
-      INSERT INTO documents (json, id_template, encrypt, build_number)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const values = [jsonData, id_template, encrypt, build_number];
-    const result = await pool.query(query, values);
-    return result.rows[0];
+  static async create({ jsonData, id_template, build_number, uuid_template }) {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Primero insertamos el documento sin encrypt para obtener el UUID
+      const insertQuery = `
+        INSERT INTO documents (json, id_template, build_number)
+        VALUES ($1, $2, $3)
+        RETURNING *;
+      `;
+      const insertValues = [jsonData, id_template, build_number];
+      const insertResult = await client.query(insertQuery, insertValues);
+      const newDoc = insertResult.rows[0];
+      
+      // Obtenemos el UUID generado
+      const uuid_documents = newDoc.uuid;
+      
+      // Generamos el encrypt usando el UUID del documento, UUID del template y build_number
+      const encrypt = createDocumentEncrypt(uuid_documents, uuid_template, build_number);
+      
+      // Actualizamos el documento con el encrypt
+      const updateQuery = `
+        UPDATE documents 
+        SET encrypt = $1 
+        WHERE id = $2
+        RETURNING *;
+      `;
+      const updateValues = [encrypt, newDoc.id];
+      const updateResult = await client.query(updateQuery, updateValues);
+      
+      await client.query('COMMIT');
+      
+      return updateResult.rows[0];
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   static async getByUUID(uuid) {

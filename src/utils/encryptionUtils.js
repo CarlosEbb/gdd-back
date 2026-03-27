@@ -62,7 +62,7 @@ export function decryptAESSecure(encryptedDataBase64, ivBase64, key) {
 }
 
 // Función específica para crear el valor encrypt basado en uuid_template y build_number
-export function createDocumentEncrypt(uuid_template, build_number) {
-  const dataToEncrypt = `${uuid_template}|${build_number}`;
+export function createDocumentEncrypt(uuid_documents,uuid_template, build_number) {
+  const dataToEncrypt = `${uuid_documents}|${uuid_template}|${build_number}`;
   return encryptAESSecure(dataToEncrypt);
 }

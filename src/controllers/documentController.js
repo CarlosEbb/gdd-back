@@ -105,15 +105,12 @@ export const saveDocumentLastVersion = async (req, res) => {
 
     const build_number = lastVersion.build_number;
 
-    // Crear el valor encrypt
-    const encrypt = createDocumentEncrypt(uuid_documents, uuid_template, build_number);
-
     // Guardar documento con los nuevos campos
     const newDoc = await Document.create({
       jsonData: json,
       id_template: template.id,
-      encrypt: encrypt,
-      build_number: build_number
+      build_number: build_number,
+      uuid_template: uuid_template
     });
 
     const urlTemp = process.env.APP_URL_BACK;

@@ -262,7 +262,16 @@ export const createTemplate = async (req, res) => {
       // Crear template por defecto
       finalTemplate = {
         schemas: [
-          []  // Array vacío de campos (sin elementos)
+          [{
+          name: "_system_placeholder",
+          type: "text",
+          position: { x: 0, y: 0 },
+          width: 1,
+          height: 1,
+          opacity: 0,
+          content: "",
+          readOnly: true
+        }]  // Array vacío de campos (sin elementos)
         ],
         basePdf: { 
           width: paperConfig.width, 

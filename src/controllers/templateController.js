@@ -207,8 +207,11 @@ export const createTemplate = async (req, res) => {
         // Continuar sin template base si hay error
       }
     }
+    console.log('antes de pasar por gemini')
     // Si NO hay categoría pero SÍ hay prompt, usar Gemini
     else if (prompt && prompt != '') {
+      
+      console.log('paso por gemini')
       console.log('🤖 Generando template con Gemini...');
       try {
         baseTemplate = await geminiService.generatePDFMESchema(prompt);

@@ -251,14 +251,14 @@ export const createTemplate = async (req, res) => {
     const paperConfig = getPaperConfig(pageSize, orientation, marginType);
     
     let finalTemplate;
-    console.log(11111111111111111);
+
     if (baseTemplate) {
       // Usar la plantilla base (de categoría o de Gemini)
-      console.log(2222222222222);
+
       finalTemplate = baseTemplate;
       
     } else {
-      console.log(333333333333333);
+      
       // Crear template por defecto
       finalTemplate = {
         schemas: [[]],
@@ -275,7 +275,7 @@ export const createTemplate = async (req, res) => {
         pdfmeVersion: "5.4.6"
       };
     }
-    
+    console.log(finalTemplate);
     // Guardar el template final
     await fs.writeFile(path_json, JSON.stringify(finalTemplate, null, 2));
 

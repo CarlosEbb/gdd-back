@@ -181,6 +181,7 @@ export const createTemplate = async (req, res) => {
     let categoryInfo = null;
 
     // REGLA: Si hay uuid_category, usarla (ignorar prompt si existe)
+    console.log('antes de pasar por gemini')
     if (uuid_category) {
       categoryInfo = await Category.findByUUID(uuid_category);
 
@@ -207,7 +208,7 @@ export const createTemplate = async (req, res) => {
         // Continuar sin template base si hay error
       }
     }
-    console.log('antes de pasar por gemini')
+    
     // Si NO hay categoría pero SÍ hay prompt, usar Gemini
     else if (prompt && prompt != '') {
       

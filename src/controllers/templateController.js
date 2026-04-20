@@ -181,7 +181,6 @@ export const createTemplate = async (req, res) => {
     let categoryInfo = null;
 
     // REGLA: Si hay uuid_category, usarla (ignorar prompt si existe)
-    console.log('antes de pasar por gemini')
     if (uuid_category) {
       categoryInfo = await Category.findByUUID(uuid_category);
 
@@ -208,11 +207,9 @@ export const createTemplate = async (req, res) => {
         // Continuar sin template base si hay error
       }
     }
-    
     // Si NO hay categoría pero SÍ hay prompt, usar Gemini
     else if (prompt && prompt != '') {
       
-      console.log('paso por gemini')
       console.log('🤖 Generando template con Gemini...');
       try {
         baseTemplate = await geminiService.generatePDFMESchema(prompt);
@@ -254,12 +251,14 @@ export const createTemplate = async (req, res) => {
     const paperConfig = getPaperConfig(pageSize, orientation, marginType);
     
     let finalTemplate;
-    
+    console.log(11111111111111111);
     if (baseTemplate) {
       // Usar la plantilla base (de categoría o de Gemini)
+      console.log(2222222222222);
       finalTemplate = baseTemplate;
       
     } else {
+      console.log(333333333333333);
       // Crear template por defecto
       finalTemplate = {
         schemas: [[]],

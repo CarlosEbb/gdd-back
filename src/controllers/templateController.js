@@ -349,9 +349,6 @@ export const updateTemplateVersion = async (req, res) => {
       marginType
     } = req.body;
     
-    // Obtener page de query params
-    const { page } = req.query;
-    
     // El archivo viene en req.file
     const templateFile = req.file;
     
@@ -384,11 +381,6 @@ export const updateTemplateVersion = async (req, res) => {
       decompressedData = JSON.parse(jsonString);
     }
 
-    // Validar la estructura del archivo subido
-    if (!decompressedData.schemas || !Array.isArray(decompressedData.schemas)) {
-      return res.status(400).json(createJSONResponse(400, 'El archivo debe contener un array "schemas"'));
-    }
-
     // 1️⃣ Buscar template por UUID
     const template = await Template.getByUUID(uuid_template);
     if (!template) {
@@ -401,96 +393,28 @@ export const updateTemplateVersion = async (req, res) => {
       return res.status(403).json(createJSONResponse(403, 'No tienes acceso al workspace de este template'));
     }
 
-    // 3️⃣ Obtener la última versión existente para cargar el JSON actual
-    const lastVersion = await Version.getLastByTemplate(template.id);
-    let existingTemplateData = null;
-    
-    // Si existe una versión previa, cargar su JSON
-    if (lastVersion) {
-      const existingPath = path.join(__dirname, '../public', lastVersion.path_json.replace(/^\/+/, ''));
-      try {
-        const existingFileData = await fs.readFile(existingPath, 'utf-8');
-        existingTemplateData = JSON.parse(existingFileData);
-      } catch (err) {
-        console.warn('No se pudo cargar versión anterior, creando nueva');
-      }
-    }
-
-    // Si no hay versión previa, usar el JSON subido como base
-    let updatedTemplateData = existingTemplateData || { ...decompressedData };
-    
-    // Asegurar que la estructura existe
-    if (!updatedTemplateData.schemas) {
-      updatedTemplateData.schemas = [];
-    }
-    if (!updatedTemplateData.basePdf) {
-      updatedTemplateData.basePdf = decompressedData.basePdf || {};
-    }
-    if (!updatedTemplateData.pdfmeVersion) {
-      updatedTemplateData.pdfmeVersion = decompressedData.pdfmeVersion || "5.4.6";
-    }
-
-    // ============================================
-    // ACTUALIZACIÓN DE PÁGINA ESPECÍFICA (PAGINACIÓN)
-    // ============================================
-    if (page !== undefined) {
-      const pageNumber = parseInt(page, 10);
-      
-      if (isNaN(pageNumber) || pageNumber < 1) {
-        return res.status(400).json(createJSONResponse(400, 'El parámetro page debe ser un número mayor o igual a 1'));
-      }
-      
-      const currentPageCount = updatedTemplateData.schemas.length;
-      const newPageData = decompressedData.schemas[0]; // El archivo subido debe tener UNA página (la nueva/actualizada)
-      
-      // Validar que el archivo subido tenga solo una página (para actualización parcial)
-      if (decompressedData.schemas.length !== 1) {
-        return res.status(400).json(createJSONResponse(400, 'Para actualizar una página específica, el archivo debe contener exactamente UNA página'));
-      }
-      
-      // Caso 1: Actualizar una página existente
-      if (pageNumber <= currentPageCount) {
-        updatedTemplateData.schemas[pageNumber - 1] = newPageData;
-        console.log(`📄 Página ${pageNumber} actualizada en template ${template.uuid_template}`);
-      } 
-      // Caso 2: Agregar una nueva página (solo la siguiente)
-      else if (pageNumber === currentPageCount + 1) {
-        updatedTemplateData.schemas.push(newPageData);
-        console.log(`📄 Nueva página ${pageNumber} agregada al template ${template.uuid_template}`);
-      }
-      // Caso 3: Intentar saltar más de una página
-      else {
-        return res.status(400).json(createJSONResponse(400, `No se puede agregar la página ${pageNumber}. Actualmente hay ${currentPageCount} páginas. Solo puedes agregar una página a la vez (página ${currentPageCount + 1}) o actualizar una página existente (1-${currentPageCount})`));
-      }
-    } else {
-      // Si no se especifica página, reemplazar todo (comportamiento original)
-      updatedTemplateData.schemas = decompressedData.schemas;
-    }
-
-    // ============================================
-    // ACTUALIZACIÓN DE CONFIGURACIÓN DE PÁGINA (basePdf)
-    // ============================================
+    // 3️⃣ Validar parámetros de configuración de página (si están presentes)
     const validPageSizes = ['CARTA', 'LEGAL', 'INFORME', 'EJECUTIVO', 'A5', 'B5', 'A4', 'FICHA'];
     const validOrientations = ['PORTRAIT', 'LANDSCAPE'];
     const validMarginTypes = ['NONE', 'NORMAL', 'ESTRECHO', 'MODERADO', 'ANCHO'];
     
     // Variables para almacenar la configuración
     let newPageConfig = null;
-    let hasPageConfig = false;
+    let updatedTemplateData = { ...decompressedData };
     
     // Verificar si se proporcionaron parámetros de configuración de página
-    if (pageSize !== undefined || orientation !== undefined || marginType !== undefined) {
-      hasPageConfig = true;
-      
+    const hasPageConfig = pageSize !== undefined || orientation !== undefined || marginType !== undefined;
+    
+    if (hasPageConfig) {
       // Determinar los valores a usar (nuevos o existentes)
       const pageSizeToUse = pageSize !== undefined ? pageSize.toUpperCase() : 
-                           (updatedTemplateData.basePdf?.pageSize || template.page_size || 'CARTA');
+                           (decompressedData?.basePdf?.pageSize || template.page_size || 'CARTA');
       
       const orientationToUse = orientation !== undefined ? orientation.toUpperCase() : 
-                              (updatedTemplateData.basePdf?.orientation || template.orientation || 'PORTRAIT');
+                              (decompressedData?.basePdf?.orientation || template.orientation || 'PORTRAIT');
       
       const marginTypeToUse = marginType !== undefined ? marginType.toUpperCase() : 
-                             (updatedTemplateData.basePdf?.marginType || template.margin_type || 'NORMAL');
+                             (decompressedData?.basePdf?.marginType || template.margin_type || 'NORMAL');
       
       // Validar los valores
       if (pageSize !== undefined && !validPageSizes.includes(pageSizeToUse)) {
@@ -508,17 +432,23 @@ export const updateTemplateVersion = async (req, res) => {
       // Obtener configuración completa de la página
       newPageConfig = getPaperConfig(pageSizeToUse, orientationToUse, marginTypeToUse);
       
-      // Actualizar el updatedTemplateData con la nueva configuración
-      updatedTemplateData.basePdf = {
-        ...(updatedTemplateData.basePdf || {}),
-        width: newPageConfig.width,
-        height: newPageConfig.height,
-        padding: [
-          newPageConfig.margins.left,
-          newPageConfig.margins.top,
-          newPageConfig.margins.right,
-          newPageConfig.margins.bottom
-        ]
+      // Actualizar el decompressedData con la nueva configuración
+      updatedTemplateData = {
+        ...decompressedData,
+        basePdf: {
+          ...(decompressedData.basePdf || {}),
+          width: newPageConfig.width,
+          height: newPageConfig.height,
+          padding: [
+            newPageConfig.margins.left,
+            newPageConfig.margins.top,
+            newPageConfig.margins.right,
+            newPageConfig.margins.bottom
+          ]
+          //pageSize: pageSizeToUse,
+          //orientation: orientationToUse,
+          //marginType: marginTypeToUse
+        }
       };
       
       console.log('✅ Configuración de página actualizada:', {
@@ -532,6 +462,7 @@ export const updateTemplateVersion = async (req, res) => {
     }
 
     // 4️⃣ Calcular nueva versión
+    const lastVersion = await Version.getLastByTemplate(template.id);
     const lastBuildNum = parseFloat(lastVersion?.build_number || 0);
     const newBuild = (lastBuildNum + 0.01).toFixed(2);
     const safeBuild = newBuild.replace('.', '_');
@@ -567,6 +498,7 @@ export const updateTemplateVersion = async (req, res) => {
       await fs.unlink(pdfResult.filePath).catch(() => {});
     } else {
       console.log("🧩 Modo: Buffer para miniatura");
+      console.log(extraerVariablesDesdeTemplate(updatedTemplateData));
       const pdfResult = await handleGeneratePdf(null, updatedTemplateData, json, true);
       await generateThumbnailFromBuffer(pdfResult.buffer, thumbnailFullPath);
     }
@@ -575,10 +507,11 @@ export const updateTemplateVersion = async (req, res) => {
     const responseData = {
       version,
       pageConfigUpdated: hasPageConfig,
-      pageUpdated: page !== undefined ? parseInt(page, 10) : null,
-      totalPages: updatedTemplateData.schemas.length,
       ...(hasPageConfig && newPageConfig && {
         pageConfig: {
+          pageSize: updatedTemplateData.basePdf.pageSize,
+          orientation: updatedTemplateData.basePdf.orientation,
+          marginType: updatedTemplateData.basePdf.marginType,
           dimensions: {
             width: newPageConfig.width,
             height: newPageConfig.height
@@ -602,7 +535,8 @@ export const updateTemplateVersion = async (req, res) => {
 export const getTemplateFile = async (req, res) => {
   try {
     const { uuid_template, build_number } = req.params;
-    const { page, compress = 'false' } = req.query; // ← Agregar page a query params
+    const { compress = 'false' } = req.query; // Opcional: ?compress=true
+    
     const shouldCompress = compress === 'true';
 
     const template = await Template.getByUUID(uuid_template);
@@ -620,50 +554,10 @@ export const getTemplateFile = async (req, res) => {
 
     const fileData = await fs.readFile(absolutePath, 'utf-8');
     const json = JSON.parse(fileData);
-    
-    // Extraer schemas y basePdf del JSON original
-    const { schemas: allSchemas, basePdf, pdfmeVersion } = json;
-    
-    let schemasToReturn = allSchemas;
-    let updatedSchemas = [...allSchemas]; // Copia para posible modificación
-    
-    // Si se especifica una página, devolver solo esa página
-    if (page !== undefined) {
-      const pageNumber = parseInt(page, 10);
-      
-      // Validar que page sea un número válido
-      if (isNaN(pageNumber) || pageNumber < 1) {
-        return res.status(400).json(createJSONResponse(400, 'El parámetro page debe ser un número mayor o igual a 1'));
-      }
-      
-      // Verificar si la página solicitada existe
-      if (pageNumber > allSchemas.length) {
-        // Solo permitir agregar UNA página más (la siguiente)
-        if (pageNumber === allSchemas.length + 1) {
-          // Agregar una nueva página vacía (array vacío)
-          updatedSchemas.push([]);
-          schemasToReturn = [updatedSchemas[pageNumber - 1]];
-          
-        } else {
-          // Si la página solicitada es más de una página adelante, error
-          return res.status(404).json(createJSONResponse(404, `No se puede saltar a la página ${pageNumber}. Actualmente hay ${allSchemas.length} páginas. Solo puedes agregar una página a la vez (página ${allSchemas.length + 1})`));
-        }
-      } else {
-        // La página existe, devolver solo el schema de la página solicitada
-        schemasToReturn = [updatedSchemas[pageNumber - 1]];
-      }
-    }
-    
-    // Construir la respuesta con la estructura requerida
-    const responseData = {
-      schemas: schemasToReturn,
-      basePdf,
-      pdfmeVersion
-    };
 
     // Opción 1: Con compresión
     if (shouldCompress) {
-      const compressedBlob = await compressJson(createJSONResponse(200, 'Plantilla cargada correctamente', responseData));
+      const compressedBlob = await compressJson(createJSONResponse(200, 'Plantilla cargada correctamente', json));
       const arrayBuffer = await compressedBlob.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
@@ -678,7 +572,7 @@ export const getTemplateFile = async (req, res) => {
       return res.send(buffer);
     }
     
-    res.json(createJSONResponse(200, 'Plantilla cargada correctamente', responseData));
+    res.json(createJSONResponse(200, 'Plantilla cargada correctamente', json));
     
   } catch (error) {
     console.error('❌ Error en getTemplateFile:', error);

@@ -209,7 +209,6 @@ export const createTemplate = async (req, res) => {
     }
     // Si NO hay categoría pero SÍ hay prompt, usar Gemini
     else if (prompt && prompt != '') {
-      
       console.log('🤖 Generando template con Gemini...');
       try {
         baseTemplate = await geminiService.generatePDFMESchema(prompt);
@@ -251,28 +250,15 @@ export const createTemplate = async (req, res) => {
     const paperConfig = getPaperConfig(pageSize, orientation, marginType);
     
     let finalTemplate;
-
+    
     if (baseTemplate) {
       // Usar la plantilla base (de categoría o de Gemini)
-
       finalTemplate = baseTemplate;
       
     } else {
-      
       // Crear template por defecto
       finalTemplate = {
-        schemas: [
-          [{
-          name: "_system_placeholder",
-          type: "text",
-          position: { x: 0, y: 0 },
-          width: 1,
-          height: 1,
-          opacity: 0,
-          content: "",
-          readOnly: true
-        }]  // Array vacío de campos (sin elementos)
-        ],
+        schemas: [[]],
         basePdf: { 
           width: paperConfig.width, 
           height: paperConfig.height, 
@@ -286,7 +272,7 @@ export const createTemplate = async (req, res) => {
         pdfmeVersion: "5.4.6"
       };
     }
-    console.log(finalTemplate);
+    
     // Guardar el template final
     await fs.writeFile(path_json, JSON.stringify(finalTemplate, null, 2));
 

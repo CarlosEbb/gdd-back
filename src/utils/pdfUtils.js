@@ -36,7 +36,7 @@ export async function handleGeneratePdf(res = null, template, jsonContent, retur
   // Llamar a la función solo si existen width y height, de lo contrario usar valores por defecto
   if (process.env.PUBLIC_IS_SANDBOX === 'true') {
     if (width !== undefined && height !== undefined) {
-      updatedTemplate = agregarImageSandbox(updatedTemplate, width - 10, height - 10);
+      updatedTemplate = agregarImageSandbox(updatedTemplate, width, height);
     } else {
       updatedTemplate = agregarImageSandbox(updatedTemplate);
     }
